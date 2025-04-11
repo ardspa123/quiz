@@ -1,0 +1,17 @@
+quiz-app/
+│
+├── backend/
+│   ├── index.js             # Express API
+│   ├── db.js                # Konfigurimi i databazës
+│   ├── questions.sql        # Struktura dhe pyetjet
+│   └── questions.csv        # Dataset për importim
+│
+├── frontend/
+│   ├── public/
+│   └── src/
+│       ├── App.jsx          # Komponenti kryesor i React
+│       ├── components/      # Komponentët si Timer, Leaderboard, Screensaver etj.
+│
+├── .env                     # Kredencialet e databazës
+├── package.json             # Dependencat (një për secilën pjesë nëse ndahen)
+└── README.md                # Udhëzime për përdorim

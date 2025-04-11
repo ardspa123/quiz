@@ -1,0 +1,274 @@
+import { useState, useEffect, useRef } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+
+export default function QuizPreview() {
+  const [step, setStep] = useState("screensaver");
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [teamName, setTeamName] = useState("");
+  const [startTime, setStartTime] = useState(null);
+  const [pointsEarned, setPointsEarned] = useState(null);
+  const [showPoints, setShowPoints] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const audioRef = useRef(null);
+
+  const screensavers = [
+    "📢 Bashkohu në quiz-in e futbollit!",
+    "🎁 Fito shpërblime duke luajtur!",
+    "📺 Reklamë: Sponsor Gjirafa50",
+    "⚽ Testo njohuritë tua për futbollin!",
+    "🕹️ Kliko kudo për të filluar!",
+  ];
+  const [currentSaver, setCurrentSaver] = useState(0);
+
+  useEffect(() => {
+    if (step === "screensaver") {
+      const interval = setInterval(() => {
+        setCurrentSaver((i) => (i + 1) % screensavers.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [step]);
+
+  const questions = [
+    // Easy
+    {
+      question: "Cili është ekipi me më shumë tituj në Champions League?",
+      options: ["AC Milan", "Real Madrid", "Barcelona", "Liverpool"],
+      answer: "Real Madrid",
+      difficulty: "Easy",
+    },
+    {
+      question: "Kush fitoi Kupën e Botës në vitin 2018?",
+      options: ["Gjermania", "Argjentina", "Franca", "Kroacia"],
+      answer: "Franca",
+      difficulty: "Easy",
+    },
+    {
+      question: "Sa lojtarë ka një ekip futbolli në fushë?",
+      options: ["9", "10", "11", "12"],
+      answer: "11",
+      difficulty: "Easy",
+    },
+    {
+      question: "Në cilin vend luan skuadra e PSG?",
+      options: ["Spanjë", "Itali", "Francë", "Gjermani"],
+      answer: "Francë",
+      difficulty: "Easy",
+    },
+    {
+      question: "Çfarë ngjyre ka kartoni për ndëshkim të rëndë?",
+      options: ["E verdhë", "E kuqe", "Blu", "E zezë"],
+      answer: "E kuqe",
+      difficulty: "Easy",
+    },
+
+    // Medium
+    {
+      question: "Kush është golashënuesi më i mirë në histori të Premier League?",
+      options: ["Wayne Rooney", "Thierry Henry", "Alan Shearer", "Harry Kane"],
+      answer: "Alan Shearer",
+      difficulty: "Medium",
+    },
+    {
+      question: "Cili klub ka më shumë tituj në Serie A?",
+      options: ["Milan", "Inter", "Juventus", "Roma"],
+      answer: "Juventus",
+      difficulty: "Medium",
+    },
+    {
+      question: "Në cilin vit është themeluar FC Barcelona?",
+      options: ["1899", "1901", "1910", "1923"],
+      answer: "1899",
+      difficulty: "Medium",
+    },
+
+    // Hard
+    {
+      question: "Cili lojtar ka më shumë paraqitje në historinë e Kupës së Botës?",
+      options: ["Miroslav Klose", "Lothar Matthäus", "Pelé", "Cristiano Ronaldo"],
+      answer: "Lothar Matthäus",
+      difficulty: "Hard",
+    },
+    {
+      question: "Kush shënoi golin më të shpejtë në historinë e Kupës së Botës?",
+      options: ["Cristiano Ronaldo", "Hakan Şükür", "David Villa", "Ronaldo Nazario"],
+      answer: "Hakan Şükür",
+      difficulty: "Hard",
+    },
+  ];
+
+  const getScoreByTime = (ms) => {
+    const seconds = ms / 1000;
+    if (seconds <= 0.5) return 11;
+    if (seconds <= 1) return 10;
+    if (seconds <= 1.5) return 9;
+    if (seconds <= 2) return 8;
+    if (seconds <= 3) return 6;
+    if (seconds <= 4) return 4;
+    if (seconds <= 8) return 2;
+    return 1;
+  };
+
+  const handleAnswer = (option) => {
+    const timeTaken = Date.now() - startTime;
+    const isCorrect = option === questions[questionIndex].answer;
+
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+    }
+
+    if (isCorrect) {
+      const points = getScoreByTime(timeTaken);
+      setScore((prev) => prev + points);
+      setPointsEarned(points);
+      setShowPoints(true);
+      setTimeout(() => {
+        setShowPoints(false);
+        nextQuestion();
+      }, 1500);
+    } else {
+      nextQuestion();
+    }
+  };
+
+  const nextQuestion = () => {
+    if (questionIndex + 1 < questions.length) {
+      setQuestionIndex((prev) => prev + 1);
+      setTimeLeft(10);
+    } else {
+      setLeaderboard((prev) => [...prev, { name: teamName || "(pa emër)", score }]);
+      setStep("end");
+    }
+  };
+
+  useEffect(() => {
+    if (step === "quiz") {
+      setStartTime(Date.now());
+      setTimeLeft(10);
+    }
+  }, [questionIndex, step]);
+
+  useEffect(() => {
+    if (step !== "quiz") return;
+    if (timeLeft <= 0) {
+      nextQuestion();
+      return;
+    }
+    const timer = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [timeLeft, step]);
+
+  const TimerVisual = () => {
+    const degrees = (timeLeft / 10) * 360;
+    return (
+      <div className="relative w-24 h-24 mx-auto my-4">
+        <div className="w-full h-full border-4 border-white rounded-full flex items-center justify-center">
+          <div
+            className="absolute w-1 h-10 bg-red-500 origin-bottom left-1/2 top-1/2"
+            style={{ transform: `rotate(${360 - degrees}deg) translateY(-50%)` }}
+          />
+          <span className="text-2xl text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            {timeLeft}s
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] flex items-center justify-center p-4"
+      onClick={() => step === "screensaver" && setStep("start")}
+    >
+      <audio ref={audioRef} src="/sounds/fans-cheer.mp3" preload="auto" />
+      <div className="w-full max-w-xl">
+        {step === "screensaver" && (
+          <div className="text-white text-5xl text-center animate-pulse p-8 bg-black/50 rounded-2xl shadow-lg">
+            {screensavers[currentSaver]}
+          </div>
+        )}
+
+        {step === "start" && (
+          <Card className="rounded-2xl shadow-xl bg-white/10 backdrop-blur border border-white/20">
+            <CardContent className="space-y-6 p-8 text-white">
+              <h1 className="text-4xl font-bold text-center">⚽ Quiz Futbolli</h1>
+              <Input
+                placeholder="Emri i skuadrës"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                className="bg-white/20 placeholder-white text-white border-white/30 text-lg py-6"
+              />
+              <Button
+                onClick={() => setStep("quiz")}
+                className="w-full bg-green-500 hover:bg-green-600 text-white text-2xl py-6"
+              >
+                Fillo Quiz-in
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "quiz" && (
+          <Card className="rounded-2xl shadow-xl bg-white/10 backdrop-blur border border-white/20">
+            <CardContent className="space-y-6 p-8 text-white">
+              <h2 className="text-2xl font-semibold">Pyetja {questionIndex + 1} / {questions.length}</h2>
+              <TimerVisual />
+              <p className="text-2xl font-bold">{questions[questionIndex].question}</p>
+              <p className="text-lg italic text-yellow-300">Vështirësia: {questions[questionIndex].difficulty}</p>
+              <div className="grid grid-cols-2 gap-4 pt-6">
+                {questions[questionIndex].options.map((option) => (
+                  <Button
+                    key={option}
+                    onClick={() => handleAnswer(option)}
+                    className="bg-white/20 hover:bg-white/30 text-white text-xl py-8 rounded-xl"
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
+              {showPoints && (
+                <p className="text-2xl mt-6 text-green-400 font-bold text-center">✅ +{pointsEarned} pikë!</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "end" && (
+          <Card className="rounded-2xl shadow-xl bg-white/10 backdrop-blur border border-white/20">
+            <CardContent className="space-y-6 p-8 text-white text-center">
+              <h2 className="text-4xl font-bold">🎉 Përfundoi Quiz-i!</h2>
+              <p className="text-2xl">Skuadra: <strong>{teamName || "(pa emër)"}</strong></p>
+              <p className="text-2xl">Rezultati juaj: <strong>{score} pikë</strong></p>
+
+              <h3 className="text-2xl font-semibold mt-6 mb-2">🏆 Leaderboard</h3>
+              <ul className="text-left space-y-2 text-xl">
+                {[...leaderboard]
+                  .sort((a, b) => b.score - a.score)
+                  .slice(0, 5)
+                  .map((entry, index) => (
+                    <li key={index} className="flex justify-between">
+                      <span>{index + 1}. {entry.name}</span>
+                      <span>{entry.score} pikë</span>
+                    </li>
+                  ))}
+              </ul>
+
+              <Button
+                onClick={() => location.reload()}
+                className="mt-6 bg-blue-500 hover:bg-blue-600 text-white text-xl py-4"
+              >
+                Rifillo
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
